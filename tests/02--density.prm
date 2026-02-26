@@ -1,0 +1,130 @@
+
+# set Resume computation                        = true
+
+set Dimension                                 = 2
+set Use years in output instead of seconds    = true
+set End time                                  = 60e6
+set Output directory                          = density-loc
+set Adiabatic surface temperature             = 1350.0
+set Maximum first time step                   = 1e6
+set Maximum time step                         = 1e6
+set Nonlinear solver scheme                   = single Advection, single Stokes
+
+set Additional shared libraries = ../bin/libVeMel25.release.so
+
+subsection Solver parameters
+  subsection Stokes solver parameters
+  set Stokes solver type = block AMG
+    set Maximum number of expensive Stokes solver steps = 1000
+    set Number of cheap Stokes solver steps = 1000
+    set Linear solver tolerance = 1
+  end
+end
+
+subsection Heating model
+  set List of model names = function
+  subsection Function
+    set Variable names = x,y,t
+    set Function constants = T_min=700, T_max=2400, width=730e3, t_max=20e6, cp=1200, rho=3300
+    set Function expression = if ( t < t_max || (t > 2*t_max && t < 2.5*t_max), ( (T_max-T_min)*x/width * if ( y < 630e3, 1, -0.5*cos ( (730e3-y)*3.141592/100e3 ) + 0.5 ) ) * cp /(t_max-0.5e6)/365.25/24/60/60, 0 )
+  end
+end
+
+subsection Geometry model
+  set Model name = box
+  subsection Box
+    set X extent = 730e3
+    set Y extent = 730e3
+    set X repetitions = 4
+    set Y repetitions = 4
+  end
+end
+
+subsection Gravity model
+  set Model name =  vertical
+  subsection Vertical
+    set Magnitude = 8.87 # m/s^2
+  end
+end
+
+subsection Boundary temperature model
+  set Fixed temperature boundary indicators =  top, bottom, left, right
+  set List of model names =  initial temperature
+end
+
+subsection Boundary velocity model
+  set Tangential velocity boundary indicators =  top, left, right, bottom
+end
+
+subsection Initial temperature model
+  set List of model names =  function
+  subsection Function
+    set Function expression = 700
+  end
+end
+
+subsection Material model
+  set Model name =  VeMel25
+  subsection VeMel25
+    set Melting model                             = none
+
+    set Densities                                 = 3300      # kg/m3
+    set Heat capacities                           = 1200      # J/K/kg
+    set Reference temperature                     = 700       # K
+    set Thermal expansivities                     = 3e-5      # 1/K
+    set Thermal conductivity                      = 1e-30     # J/m/kg
+
+    set Minimum viscosity                         = 1e40      # Pa s
+    set Maximum viscosity                         = 1e40      # Pa s
+  end
+end
+
+subsection Compositional fields
+  set Number of fields            = 1
+  set Names of fields             = mantle_depletion
+  set Compositional field methods = field
+end
+
+subsection Initial composition model
+  set List of model names =  function
+  subsection Function
+    set Function expression = 0.0
+  end
+end
+
+subsection Boundary composition model
+  set Fixed composition boundary indicators           = top, bottom, left, right
+  set List of model names                             = initial composition
+end
+
+subsection Mesh refinement
+  set Initial adaptive refinement        = 2
+  set Initial global refinement          = 4
+  set Minimum refinement level           = 4
+
+  set Strategy =  minimum refinement function
+
+  subsection Minimum refinement function
+    set Coordinate system =  cartesian
+    set Variable names = x,y
+    set Function expression = if ( x > 715e3 || y < 15e3, 6, 0 )
+  end
+end
+
+subsection Postprocess
+  set List of postprocessors =  visualization, velocity statistics, temperature statistics, heat flux statistics
+
+  subsection Visualization
+    set Output format                 = vtu
+    set List of output variables      = material properties, error indicator, heating
+    set Time between graphical output = 1e6 # yr
+    
+    subsection Material properties
+      set List of material properties = density, viscosity, reaction terms
+    end
+  end
+end
+
+subsection Checkpointing
+  set Steps between checkpoint = 10
+end
