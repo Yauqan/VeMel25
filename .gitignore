@@ -3,3 +3,7 @@
 
 # ignore build files
 bin/
+
+# ignore local
+*-loc.*
+*-loc/
