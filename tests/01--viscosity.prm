@@ -4,7 +4,7 @@
 set Dimension                                 = 2
 set Use years in output instead of seconds    = true
 set End time                                  = 60e6
-set Output directory                          = viscosity
+set Output directory                          = viscosity-loc
 set Adiabatic surface temperature             = 1350.0
 set Maximum first time step                   = 1e6
 set Maximum time step                         = 1e6
@@ -17,6 +17,7 @@ subsection Solver parameters
   set Stokes solver type = block AMG
     set Maximum number of expensive Stokes solver steps = 1000
     set Number of cheap Stokes solver steps = 1000
+    set Linear solver tolerance = 1
   end
 end
 
@@ -98,7 +99,7 @@ subsection Initial composition model
 end
 
 subsection Boundary composition model
-  set Fixed composition boundary indicators           = top, bottom, left, right, front, back
+  set Fixed composition boundary indicators           = top, bottom, left, right
   set List of model names                             = initial composition
 end
 
