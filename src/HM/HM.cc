@@ -1,5 +1,6 @@
 #include "HM.h"
 #include "../MM/MM.h"
+#include <aspect/initial_composition/interface.h>
 
 namespace aspect {
   namespace HeatingModel {
@@ -13,11 +14,11 @@ namespace aspect {
         const unsigned int mantle_depletion_indx = this->introspection().compositional_index_for_name ( "mantle_depletion" );
         const double dF = mout.reaction_terms[q][mantle_depletion_indx];
         if ( this->get_timestep_number() > 1 ) {
-          hout.heating_source_terms[q] - out.densities[q]*latent_heat*dF/this->get_timestep();
+          hout.heating_source_terms[q] = mout.densities[q]*latent_heat*dF/this->get_timestep();
         }
         else if ( this->get_timestep_number() == 1 ) {
-          const double F0 = initcomp.get()->initial_composition ( in.position[q], mantle_depletion_indx );
-          hout.heating_source_terms[q] = -out.densities[q]*latent_heat*(in.composition[q][mantle_depletion_indx]-F0 + dF)/this->get_timestep();
+          const double F0 = initcomp.get()->initial_composition ( min.position[q], mantle_depletion_indx );
+          hout.heating_source_terms[q] = -mout.densities[q]*latent_heat*(min.composition[q][mantle_depletion_indx]-F0 + dF)/this->get_timestep();
         }
         else {
           hout.heating_source_terms[q] = 0.0;
@@ -43,7 +44,7 @@ namespace aspect {
     }
 
     template <int dim>
-    void VeMel25::parse_parameters ( ParameterHandler & prm ) {
+    void VeMel25<dim>::parse_parameters ( ParameterHandler & prm ) {
       prm.enter_subsection ( "Heating model" );
         prm.enter_subsection ( "VeMel25" );
           latent_heat                             = prm.get_double ( "Latent heat of melting" );

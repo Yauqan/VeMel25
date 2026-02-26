@@ -1,5 +1,6 @@
 
 #include "MM.h"
+#include "../HM/HM.h"
 #include "melting_models/melt.h"
 
 #include <deal.II/numerics/fe_field_function.h>
@@ -9,6 +10,7 @@ namespace aspect
   namespace MaterialModel
   {
     template <int dim> double VeMel25<dim>::depletion_increment ( const double T, const double p, const double F_0, const double cp, const double lat_heat, const int maximum_melting_nonlinear_iterations, const double required_melting_precision ) const {
+      using namespace VeMel25_melting_models;
       if ( p > maxPressure )
         return 0.0;
       
@@ -21,12 +23,13 @@ namespace aspect
       const double Tliq = T_Liquidus(p);
 
       if ( melting_model == MeltingModel::Katz2003 ) {
+        const double Tlhe = T_Lherzolite(p);
         const double dTf = lat_heat / cp;
         const double Fcpxout = F_cpxout ( p, Cpx );
         const double Tcpxout = T_cpxout ( Fcpxout, Tsol, Tlhe );
         double dF = 0.0;
         for ( int k = 0; k <= maximum_melting_nonlinear_iterations; ++k ) {
-          const std::pair<double, double> melting = ::Katz2003der ( T - dTf*dF, Tsol, Tlhe, Tliq, Fcpxout, Tcpxout );
+          const std::pair<double, double> melting = Katz2003der ( T - dTf*dF, Tsol, Tlhe, Tliq, Fcpxout, Tcpxout );
           if ( abs ( melting.first - F_0 - dF ) < required_melting_precision )
             break;
           dF = dF - std::max(-0.1,std::min(0.1, ( melting.first - F_0 - dF ) / ( -dTf * melting.second - 1.0 )));
@@ -34,8 +37,8 @@ namespace aspect
         return std::max (dF, 0.0);
       }
       else if ( melting_model == MeltingModel::McKenzie1988 ) {
-        AssertThrow ( lat_heat == 0.0, ExcMessage ( "McKenzie1988 with latent heat was not implemented." ) );
-        return std::max( 0.0, ::McKenzie1988 ( T, Tsol, Tliq ) - F_0 );
+        AssertThrow ( lat_heat == 0.0, ExcMessage ( "McKenzie 1988 with latent heat was not implemented." ) );
+        return std::max( 0.0, VeMel25_melting_models::McKenzie1988 ( T, Tsol, Tliq ) - F_0 );
       }
     }
 
@@ -56,7 +59,8 @@ namespace aspect
         equation_of_state.evaluate(in, q, eos_outputs);
         const double p = in.pressure[q];
         const double T = in.temperature[q];
-        const double spec_heat_old = MaterialUtilities::average_value ( volume_fractions, eos_outputs.specific_heat_capacities, MaterialUtilities::arithmetic );
+        const std::vector<double> volume_fractions_old = MaterialUtilities::compute_only_composition_fractions ( in.composition[q], this->introspection().chemical_composition_field_indices() );
+        const double spec_heat_old = MaterialUtilities::average_value ( volume_fractions_old, eos_outputs.specific_heat_capacities, MaterialUtilities::arithmetic );
         
         const aspect::HeatingModel::VeMel25<dim> * HM = nullptr;
         for ( const std::unique_ptr< HeatingModel::Interface< dim > > & hm: this->get_heating_model_manager().get_active_heating_models() )
@@ -81,9 +85,9 @@ namespace aspect
         
         std::vector<double> viscosities ( volume_fractions.size(), 0.0 );
         for ( unsigned int j = 0; j < volume_fractions.size(); ++j )
-          viscosities[j] = diffusion_creep.compute_viscosity ( p, T_star, j, phase_function_values, n_phase_transitions_per_composition );
+          viscosities[j] = diffusion_creep.compute_viscosity ( p, T, j, phase_function_values, n_phase_transitions_per_composition );
         out.viscosities[q]  = MaterialUtilities::average_value ( volume_fractions, viscosities, MaterialUtilities::harmonic );
-        out.viscosities[q] *= std::pow ( 1.0 - Fnow, ( volatile_partition - 1.0 ) / volatile_partition );
+        out.viscosities[q] *= std::pow ( 1.0 - Fnew, ( volatile_partition - 1.0 ) / volatile_partition );
         out.viscosities[q]  = std::min ( viscosity_maximum, std::max ( viscosity_minimum, out.viscosities[q] ) );
         out.densities[q] = MaterialUtilities::average_value ( volume_fractions, eos_outputs.densities, MaterialUtilities::arithmetic );
         out.thermal_expansion_coefficients[q] = MaterialUtilities::average_value ( volume_fractions, eos_outputs.thermal_expansion_coefficients, MaterialUtilities::arithmetic );

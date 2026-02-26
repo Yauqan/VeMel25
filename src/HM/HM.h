@@ -19,6 +19,6 @@ namespace aspect {
         int maximum_melting_nonlinear_iterations;
       private:
         mutable std::shared_ptr<const InitialComposition::Manager<dim>> initcomp;
-    }
+    };
   }
 }
