@@ -14,7 +14,7 @@ namespace aspect {
         const unsigned int mantle_depletion_indx = this->introspection().compositional_index_for_name ( "mantle_depletion" );
         const double dF = mout.reaction_terms[q][mantle_depletion_indx];
         if ( this->get_timestep_number() > 1 ) {
-          hout.heating_source_terms[q] = mout.densities[q]*latent_heat*dF/this->get_timestep();
+          hout.heating_source_terms[q] = -mout.densities[q]*latent_heat*dF/this->get_timestep();
         }
         else if ( this->get_timestep_number() == 1 ) {
           const double F0 = initcomp.get()->initial_composition ( min.position[q], mantle_depletion_indx );
