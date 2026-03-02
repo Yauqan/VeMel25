@@ -1,0 +1,169 @@
+
+# set Resume computation                        = true
+
+set Dimension                                 = 3
+set Use years in output instead of seconds    = true
+set End time                                  = 3000e6
+set Output directory                          = plume-238-GMG-loc
+set Adiabatic surface temperature             = 1350.0
+set Maximum first time step                   = 1e6
+set Maximum time step                         = 1e6
+
+set Additional shared libraries = ../bin/libVeMel25.release.so
+
+subsection Solver parameters
+  subsection Stokes solver parameters
+    set Stokes solver type = block GMG
+    set Maximum number of expensive Stokes solver steps = 10000
+    set Number of cheap Stokes solver steps = 10000
+  end
+end
+
+subsection Geometry model
+  set Model name = box
+  subsection Box
+    set Z extent = 730e3
+    set X extent = 2920e3
+    set Y extent = 2920e3
+    set X repetitions = 4
+    set Y repetitions = 4
+  end
+end
+
+subsection Gravity model
+  set Model name =  vertical
+  subsection Vertical
+    set Magnitude = 8.87 # m/s^2
+  end
+end
+
+subsection Heating model
+  set List of model names =  constant heating, adiabatic heating, shear heating
+  subsection Constant heating
+    set Radiogenic heating rate = 6.5e-12
+  end
+  subsection Adiabatic heating
+    set Use simplified adiabatic heating = true
+  end
+end
+
+subsection Boundary temperature model
+  set Fixed temperature boundary indicators =  top, bottom
+  set List of model names                   =  box, function
+  set List of model operators               =  add
+  subsection Box
+    set Bottom temperature  = 1975
+    set Top temperature     = 700
+  end
+  subsection Function
+    set Variable names      = x, y, z, t
+    set Function constants  = TA=150e6, Tp=220, sigma=120e3, \
+                              width=2920e3, depth=730e3
+    set Function expression = if ( t < TA && z < depth/2, Tp*exp(-( (x-width/2)^2 + (y-width/2)^2 )^3/(2*sigma^6)), 0 )
+  end
+end
+
+subsection Boundary velocity model
+  set Tangential velocity boundary indicators =  top, left, right, front, back
+end
+
+subsection Boundary traction model
+  set Prescribed traction boundary indicators =  bottom: zero traction
+end
+
+subsection Initial temperature model
+  set List of model names =  ascii data
+  subsection Ascii data model
+    set Data directory = /nfs30/dizov/all/aspect/Venus/Models/SM25/initial3D/122--conv3D-eta20/output/SaveInitialTemperature/
+    set Data file name = 1000.dat
+  end
+end
+
+subsection Material model
+set Material averaging =  project to Q1
+  set Model name =  VeMel25
+  subsection VeMel25
+    set Densities                                 = 3300, 3227.4      # kg/m3, according to Sparks (1992) and Manglik (1997) should be between -79.2 and -198 (if garnet is present), +6.6 probably comes from the latent heat
+    set Heat capacities                           = 1200
+    set Reference temperature                     = 700               # K, Venus' surface temperature
+    set Thermal expansivities                     = 3e-5
+    set Thermal conductivity                      = 3.96
+    
+    set Melting model                             = Katz 2003
+    set Fertile Cpx wt%                           = 15
+
+    set Grain size                                = 1.5e20            # = upper mantle viscosity, Pa s
+    set Activation energies for diffusion creep   = 3e5               # J/mol, Karato, Wu 1993
+    set Activation volumes for diffusion creep    = 6e-6              # m^3/mol, Karato, Wu 1993
+    set Minimum viscosity                         = 3.16e18           # Pa s
+    set Maximum viscosity                         = 1e26              # Pa s
+
+    set Grain size exponents for diffusion creep  = 1
+    set Prefactors for diffusion creep            = 1.5e10            # fitting the upper mantle viscosity
+  end
+end
+
+subsection Compositional fields
+  set Number of fields            = 1
+  set Names of fields             = mantle_depletion
+  set Compositional field methods = field
+end
+
+subsection Initial composition model
+  set List of model names =  function
+  subsection Function
+    set Function expression = 0.0
+  end
+end
+
+subsection Boundary composition model
+  set Allow fixed composition on outflow boundaries   = false
+  set Fixed composition boundary indicators           = top, bottom, left, right, front, back
+  set List of model names                             = initial composition
+end
+
+subsection Mesh refinement
+  set Initial adaptive refinement        = 4
+  set Initial global refinement          = 1
+  set Minimum refinement level           = 1
+
+  set Strategy =  temperature,  composition gradient, minimum refinement function, maximum refinement function
+  set Refinement criteria merge operation = max
+  set Refinement criteria scaling factors = 1, 1, 1, 1
+  set Time steps between mesh refinement  = 10
+  set Additional refinement times = 1e6, 2e6
+  # set Skip solvers on initial refinement = true
+  
+  subsection Minimum refinement function
+    set Coordinate system =  cartesian
+    set Variable names = x,y,z
+    set Function constants = s=1460e3, d_max=630e3, plume_width=150e3
+    set Function expression = max ( if ( (x-s)^2 + (y-s)^2 < plume_width^2, 3, 0 ), \
+                                    if ( z > d_max, 4, 0 ) )
+  end
+
+  subsection Maximum refinement function
+    set Coordinate system =  cartesian
+    set Variable names = x,y,z
+    set Function constants = d_min=400e3, d_max=630e3, s=1460e3, max_width=850e3
+    set Function expression = if ( z < d_min, 3, if ( z > d_max, 4, 5 ) )
+  end
+end
+
+subsection Postprocess
+  set List of postprocessors =  visualization, velocity statistics, temperature statistics, heat flux statistics
+
+  subsection Visualization
+    set Output format                 = vtu
+    set List of output variables      = material properties, error indicator
+    set Time between graphical output = 1e6 # yr
+    
+    subsection Material properties
+      set List of material properties = density, viscosity, reaction terms
+    end
+  end
+end
+
+subsection Checkpointing
+  set Steps between checkpoint = 10
+end
