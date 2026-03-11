@@ -25,7 +25,7 @@ DEAL_II_INITIALIZE_CACHED_VARIABLES()
 # ENDIF()
 SET(TARGET "VeMel25")
 PROJECT(${TARGET})
-ADD_LIBRARY(${TARGET} SHARED 	src/MM/MM.cc src/HM/HM.cc )
+ADD_LIBRARY(${TARGET} SHARED 	src/MM/MM.cc src/HM/HM.cc src/better-dynamic-topography/better-dynamic-topography.cc )
 ASPECT_SETUP_PLUGIN(${TARGET})
 
 
