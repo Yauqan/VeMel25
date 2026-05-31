@@ -27,7 +27,7 @@ namespace aspect
         void load ( const std::map<std::string, std::string> & status_strings ) override;
 
       private:
-        void output_to_file ( const types::boundary_id boundary_id, const std::vector<std::pair<Point<dim>, double>> & position_and_topography );
+        void output_to_file ( const types::boundary_id boundary_id, const std::vector<std::pair<Point<dim>, double>> & position_and_topography, int outindx );
         void set_last_output_time ( const double current_time );
 
         LinearAlgebra::BlockVector topo_vector;

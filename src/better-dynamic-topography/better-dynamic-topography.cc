@@ -6,6 +6,7 @@
 
 #include <deal.II/base/quadrature_lib.h>
 #include <deal.II/fe/fe_values.h>
+#include <filesystem>
 #include <map>
 
 namespace aspect
@@ -357,9 +358,11 @@ namespace aspect
 
       // Possibly output the result to file.
       if (output_surface)
-        output_to_file(top_boundary_id, stored_values_surface);
+        output_to_file(top_boundary_id, stored_values_surface, output_index );
       if (output_bottom)
-        output_to_file(bottom_boundary_id, stored_values_bottom);
+        output_to_file(bottom_boundary_id, stored_values_bottom, output_index);
+
+      output_index ++;
 
       set_last_output_time ( this->get_time() );
       last_output_timestep = this->get_timestep_number();
@@ -407,7 +410,7 @@ namespace aspect
     template <int dim>
     void
     BetterDynamicTopography<dim>::output_to_file(const types::boundary_id boundary_id,
-                                           const std::vector<std::pair<Point<dim>,double>> &position_and_topography)
+                                           const std::vector<std::pair<Point<dim>,double>> &position_and_topography, int outindx )
     {
       // get boundary name and avoid spaces for file output
       std::string boundary_name = this->get_geometry_model().translate_id_to_symbol_name(boundary_id);
@@ -434,8 +437,11 @@ namespace aspect
         }
 
       std::string filename = this->get_output_directory() +
-                             "dynamic_topography/dynamic_topography_" + boundary_name + "." +
-                             Utilities::int_to_string(this->get_timestep_number(), 5);
+                             "dynamic_topography/" + boundary_name + "." +
+                             Utilities::int_to_string(outindx, 5);
+      std::filesystem::path addrout (filename);
+      if (addrout.has_parent_path())
+        std::filesystem::create_directories ( addrout.parent_path() );
       if (this->get_parameters().run_postprocessors_on_nonlinear_iterations)
         filename.append("." + Utilities::int_to_string (this->get_nonlinear_iteration(), 4));
 

@@ -36,6 +36,7 @@ namespace aspect
         double thermal_conductivity;
         MeltingModel melting_model;
         double Cpx;
+        double depletion_density_change;
         double maxPressure = 10e9; // Pa s
         Rheology::DiffusionCreep<dim> diffusion_creep;
         EquationOfState::MulticomponentIncompressible<dim> equation_of_state;

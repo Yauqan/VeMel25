@@ -40,6 +40,7 @@ namespace aspect
         AssertThrow ( lat_heat == 0.0, ExcMessage ( "McKenzie 1988 with latent heat was not implemented." ) );
         return std::max( 0.0, VeMel25_melting_models::McKenzie1988 ( T, Tsol, Tliq ) - F_0 );
       }
+      return std::numeric_limits<double>::quiet_NaN();
     }
 
     template <int dim> void VeMel25<dim>:: evaluate ( const MaterialModel::MaterialModelInputs<dim> & in, MaterialModel::MaterialModelOutputs<dim> & out ) const
@@ -89,7 +90,7 @@ namespace aspect
         out.viscosities[q]  = MaterialUtilities::average_value ( volume_fractions, viscosities, MaterialUtilities::harmonic );
         out.viscosities[q] *= std::pow ( 1.0 - Fnew, ( volatile_partition - 1.0 ) / volatile_partition );
         out.viscosities[q]  = std::min ( viscosity_maximum, std::max ( viscosity_minimum, out.viscosities[q] ) );
-        out.densities[q] = MaterialUtilities::average_value ( volume_fractions, eos_outputs.densities, MaterialUtilities::arithmetic );
+        out.densities[q] = MaterialUtilities::average_value ( volume_fractions, eos_outputs.densities, MaterialUtilities::arithmetic ) + depletion_density_change*Fnew;
         out.thermal_expansion_coefficients[q] = MaterialUtilities::average_value ( volume_fractions, eos_outputs.thermal_expansion_coefficients, MaterialUtilities::arithmetic );
         out.specific_heat[q] = MaterialUtilities::average_value ( volume_fractions, eos_outputs.specific_heat_capacities, MaterialUtilities::arithmetic );
         out.thermal_conductivities[q] = thermal_conductivity;
@@ -133,6 +134,8 @@ namespace aspect
                               "Melting model that is to be used. Models available: " + available_melting_models + "." );
           prm.declare_entry ( "Fertile Cpx wt%", "15", Patterns::Double ( 0.0, 100.0 ),
                               "The weigth percent of Clinopyroxene in a fertile mantle for Katz 2003 melting model. Value is expected to be between 0 and 100." );
+          prm.declare_entry ( "Depletion density change", "0.0", Patterns::Double(),
+                              "The density change due to depletion." );
         }
         prm.leave_subsection();
       }
@@ -167,6 +170,8 @@ namespace aspect
             melting_model = MeltingModel::McKenzie1988;
           else if ( MMS == "Katz 2003" )
             melting_model = MeltingModel::Katz2003;
+          
+          depletion_density_change = prm.get_double ( "Depletion density change" );
         }
         prm.leave_subsection();
       }

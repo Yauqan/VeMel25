@@ -15,17 +15,12 @@ IF (NOT Aspect_FOUND)
         "manual for more information.")
 ENDIF ()
 
-# Initialize deal.II variables
 DEAL_II_INITIALIZE_CACHED_VARIABLES()
-# Enforce the deal.II version
-# FIND_PACKAGE(deal.II 9.6.2 REQUIRED)
-# Ensure that we are linking the right version of deal.II
-# IF (NOT DEALLIB_FOUND)
-# 	MESSAGE(FATAL_ERROR "deal.II version 9.6.2 not found!")
-# ENDIF()
 SET(TARGET "VeMel25")
 PROJECT(${TARGET})
-ADD_LIBRARY(${TARGET} SHARED 	src/MM/MM.cc src/HM/HM.cc src/better-dynamic-topography/better-dynamic-topography.cc )
+ADD_LIBRARY(${TARGET} SHARED 	src/MM/MM.cc src/HM/HM.cc src/PP/PP.cc src/better-dynamic-topography/better-dynamic-topography.cc src/prescribed-velocity/prescribed-velocity.cc )
+target_compile_features(${TARGET} PUBLIC cxx_std_20)
+# target_compile_features(${TARGET} PRIVATE -fconcepts)
 ASPECT_SETUP_PLUGIN(${TARGET})
 
 
