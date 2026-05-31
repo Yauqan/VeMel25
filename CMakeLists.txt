@@ -1,4 +1,5 @@
 CMAKE_MINIMUM_REQUIRED(VERSION 3.13.4)
+SET (CMAKE_CXX_STANDARD 20)
 
 # set ( Aspect_DIR ~/bin/aspect-3.0.0/ )
 # set ( deal.II_DIR ~/bin/dealii-9.6.2/ )
