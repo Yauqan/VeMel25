@@ -31,6 +31,7 @@ namespace aspect
 
       private:
         double volatile_partition;
+        double XH2O;
         double viscosity_minimum;
         double viscosity_maximum;
         double thermal_conductivity;

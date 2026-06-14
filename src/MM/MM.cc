@@ -23,12 +23,16 @@ namespace aspect
       const double Tliq = T_Liquidus(p);
 
       if ( melting_model == MeltingModel::Katz2003 ) {
-        const double Tlhe = T_Lherzolite(p);
         const double dTf = lat_heat / cp;
         const double Fcpxout = F_cpxout ( p, Cpx );
-        const double Tcpxout = T_cpxout ( Fcpxout, Tsol, Tlhe );
         double dF = 0.0;
         for ( int k = 0; k <= maximum_melting_nonlinear_iterations; ++k ) {
+          const double F = F_0 + dF;
+          const double XH2O_now = XH2O * pow ( 1.0 - F, (1.0 - volatile_partition)/volatile_partition );
+          const double Tsol = T_Solidus ( p ) - dT ( p, XH2O_now );
+          const double Tlhe = T_Lherzolite ( p ) - dT ( p, XH2O_now );
+          const double Tliq = T_Liquidus ( p ) - dT ( p, XH2O_now );
+          const double Tcpxout = T_cpxout ( Fcpxout, Tsol, Tlhe );
           const std::pair<double, double> melting = Katz2003der ( T - dTf*dF, Tsol, Tlhe, Tliq, Fcpxout, Tcpxout );
           if ( abs ( melting.first - F_0 - dF ) < required_melting_precision )
             break;
@@ -129,6 +133,8 @@ namespace aspect
                               "The value of maximum viscosity $\\eta_{max}$. Units: \\si{\\pascal\\second}.");
           prm.declare_entry ( "Volatile partition coefficient", "1.0", Patterns::Double ( 0.0 ),
                               "The volatile partition coefficient. Dimensionless, no units." );
+          prm.declare_entry ( "Water bulk weight percent", "0.0", Patterns::Double ( 0.0 ),
+                              "The weight percent of water in the bulk of the mantle. Value is expected to be between 0 and 100 (%)." );
           const std::string available_melting_models = "none|McKenzie 1988|Katz 2003";
           prm.declare_entry ( "Melting model", "McKenzie 1988", Patterns::Selection ( available_melting_models ),
                               "Melting model that is to be used. Models available: " + available_melting_models + "." );
@@ -161,6 +167,7 @@ namespace aspect
           viscosity_minimum     = prm.get_double ( "Minimum viscosity" );
           viscosity_maximum     = prm.get_double ( "Maximum viscosity" );
           volatile_partition    = prm.get_double ( "Volatile partition coefficient" );
+          XH2O                  = prm.get_double ( "Water bulk weight percent" );
 
           Cpx                   = prm.get_double ( "Fertile Cpx wt%" ) / 100.0;
           std::string MMS       = prm.get ( "Melting model" );
