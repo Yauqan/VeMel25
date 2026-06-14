@@ -20,6 +20,13 @@ namespace VeMel25_melting_models {
     const double b1 = 1.5;
     const double b2 = 1.5;
   }
+  namespace Katz2003hydrousnmspc {
+    const double K = 43.0;
+    const double gamma = 0.75;
+    const double chi1 = 12.0;
+    const double chi2 = 1.0;
+    const double lambda = 0.6;
+  }
 
   inline double T_Solidus ( const double p ) {
     return cSol[0] + cSol[1]*p + cSol[2]*p*p + CtoK;
@@ -29,6 +36,14 @@ namespace VeMel25_melting_models {
   }
   inline double T_Liquidus ( const double p ) {
     return cLiq[0] + cLiq[1]*p + cLiq[2]*p*p + CtoK;
+  }
+  inline double dT ( const double p_Pa, const double XH2O_weightfraction ) {
+    using namespace VeMel25_melting_models::Katz2003hydrousnmspc;
+    const double p_GPa = p_Pa*1e-9;
+    const double XH2O_wtpercent = XH2O_weightfraction*100.0;
+
+    const double H2O_sat = chi1 * pow ( p_GPa, lambda ) + chi2 * p_GPa;
+    return K * pow ( min( H2O_sat, XH2O_wtpercent ), gamma );
   }
 
   inline double McKenzie1988 ( const double T, const double T_sol, const double T_liq ) {
